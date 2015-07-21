@@ -649,8 +649,8 @@ sub setup_categories_and_bodies : Private {
                 $category_extras{ $contact->category } = $metas
                     if scalar @$metas;
 
-                my $unresponsive = $contact->get_extra_metadata('unresponsive');
-                $c->stash->{unresponsive}{$contact->category} = $contact->body_id if $unresponsive;
+                $c->stash->{unresponsive}{$contact->category} = $contact->body_id
+                    if $contact->email =~ /^REFUSED$/i;
 
                 $non_public_categories{ $contact->category } = 1 if $contact->non_public;
             }

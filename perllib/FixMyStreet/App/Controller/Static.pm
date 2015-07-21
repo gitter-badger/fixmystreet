@@ -69,8 +69,7 @@ sub unresponsive : Global : Args(0) {
     my @contacts = $c->model('DB::Contact')->not_deleted->search( { body_id => $body->id } )->all;
     my $any_unresponsive = 0;
     foreach my $contact (@contacts) {
-        my $unresponsive = $contact->get_extra_metadata('unresponsive');
-        $any_unresponsive = 1 if $unresponsive;
+        $any_unresponsive = 1 if $contact->email =~ /^REFUSED$/i;
     }
 
     $c->detach( '/page_error_404_not_found' ) unless $any_unresponsive;
