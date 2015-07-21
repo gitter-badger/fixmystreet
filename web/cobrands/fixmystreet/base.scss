@@ -175,6 +175,7 @@
     &:visited {
         color: #fff;
     }
+
     &:hover,
     &:focus {
         text-decoration: none;
@@ -186,6 +187,10 @@
 .unresponsive-council-cta--primary {
     background-color: $primary;
     color: #000;
+
+    &:visited {
+        color: #000;
+    }
 
     &:hover,
     &:focus {
