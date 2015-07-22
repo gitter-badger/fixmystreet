@@ -613,6 +613,10 @@ sub setup_categories_and_bodies : Private {
       ();    # categories for which the reports are not public
     $c->stash->{unresponsive} = {};
 
+    if (keys %bodies == 1 && $first_body->send_method eq 'Refused') {
+        $c->stash->{unresponsive}{ALL} = $first_body->id;
+    }
+
     # FIXME - implement in cobrand
     if ( $c->cobrand->moniker eq 'emptyhomes' ) {
 
