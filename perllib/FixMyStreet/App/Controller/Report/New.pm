@@ -878,14 +878,19 @@ sub process_report : Private {
             return 1;
         }
 
-        # construct the bodies string:
-        #  'x,x' - x are body IDs that have this category
-        #  'x,x|y' - x are body IDs that have this category, y body IDs with *no* contact
-        my $body_string = join( ',', map { $_->body_id } @contacts );
-        $body_string .=
-          '|' . join( ',', map { $_->id } @{ $c->stash->{missing_details_bodies} } )
-            if $body_string && @{ $c->stash->{missing_details_bodies} };
-        $report->bodies_str($body_string);
+        if ($c->stash->{unresponsive}{$report->category} || $c->stash->{unresponsive}{ALL}) {
+            # Unresponsive, don't try and send a report.
+            $report->bodies_str(-1);
+        } else {
+            # construct the bodies string:
+            #  'x,x' - x are body IDs that have this category
+            #  'x,x|y' - x are body IDs that have this category, y body IDs with *no* contact
+            my $body_string = join( ',', map { $_->body_id } @contacts );
+            $body_string .=
+              '|' . join( ',', map { $_->id } @{ $c->stash->{missing_details_bodies} } )
+                if $body_string && @{ $c->stash->{missing_details_bodies} };
+            $report->bodies_str($body_string);
+        }
 
         my @extra;
         # NB: we are only checking extras for the *first* retrieved contact.
