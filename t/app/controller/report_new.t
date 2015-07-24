@@ -1462,6 +1462,78 @@ subtest "categories from deleted bodies shouldn't be visible for new reports" =>
     };
 };
 
+subtest "unresponsive council handling works" => sub {
+    FixMyStreet::override_config {
+        ALLOWED_COBRANDS => [ { fixmystreet => '.' } ],
+        MAPIT_URL => 'http://mapit.mysociety.org/',
+    }, sub {
+        # Test body-level send method
+        my $old_send = $contact1->body->send_method;
+        $contact1->body->update( { send_method => 'Refused' } );
+        $mech->get_ok('/report/new/ajax?latitude=55.9&longitude=-3.2'); # Edinburgh
+        my $body_id = $contact1->body->id;
+        ok $mech->content_like( qr{Edinburgh.*accept reports.*/unresponsive\?body=$body_id} );
+
+        my $test_email = 'test-2@example.com';
+        my $user = $mech->log_in_ok($test_email);
+        $mech->get_ok('/around');
+        $mech->submit_form_ok( { with_fields => { pc => 'EH1 1BB', } }, "submit location" );
+        $mech->follow_link_ok( { text_regex => qr/skip this step/i, }, "follow 'skip this step' link" );
+        $mech->submit_form_ok(
+            {
+                with_fields => {
+                    title         => "Test Report at café",
+                    detail        => 'Test report details.',
+                    photo         => '',
+                    name          => 'Joe Bloggs',
+                    may_show_name => '1',
+                    phone         => '07903 123 456',
+                    category      => 'Trees',
+                }
+            },
+            "submit good details"
+        );
+
+        my $report = $user->problems->first;
+        ok $report, "Found the report";
+        is $report->bodies_str, undef, "Report not going anywhere";
+
+        $user->problems->delete;
+        $contact1->body->update( { send_method => $old_send } );
+
+        # And test per-category refusing
+        my $old_email = $contact3->email;
+        $contact3->update( { email => 'REFUSED' } );
+        $mech->get_ok('/report/new/category_extras?category=Trees&latitude=51.89&longitude=-2.09');
+        ok $mech->content_like( qr/Cheltenham.*Trees.*unresponsive/ );
+
+        $mech->get_ok('/around');
+        $mech->submit_form_ok( { with_fields => { pc => 'GL50 2PR', } }, "submit location" );
+        $mech->follow_link_ok( { text_regex => qr/skip this step/i, }, "follow 'skip this step' link" );
+        $mech->submit_form_ok(
+            {
+                with_fields => {
+                    title         => "Test Report at café",
+                    detail        => 'Test report details.',
+                    photo         => '',
+                    name          => 'Joe Bloggs',
+                    may_show_name => '1',
+                    phone         => '07903 123 456',
+                    category      => 'Trees',
+                }
+            },
+            "submit good details"
+        );
+
+        my $report = $user->problems->first;
+        ok $report, "Found the report";
+        is $report->bodies_str, undef, "Report not going anywhere";
+
+        $contact3->update( { email => $old_email } );
+        $mech->delete_user($user);
+    };
+};
+
 subtest "extra google analytics code displayed on logged in problem creation" => sub {
     FixMyStreet::override_config {
         ALLOWED_COBRANDS => [ { fixmystreet => '.' } ],
